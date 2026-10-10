@@ -1,0 +1,1 @@
+"""BallX GPID foundation."""
