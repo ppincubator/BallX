@@ -1,0 +1,73 @@
+name: ballx-gpid
+
+services:
+  db:
+    image: postgis/postgis:16-3.5
+    environment:
+      POSTGRES_DB: ballx
+      POSTGRES_USER: ballx
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ballx_dev}
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ballx -d ballx"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    image: ballx-gpid:dev
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://ballx:${POSTGRES_PASSWORD:-ballx_dev}@db:5432/ballx
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    image: ballx-gpid:dev
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://ballx:${POSTGRES_PASSWORD:-ballx_dev}@db:5432/ballx
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  test-db:
+    image: postgis/postgis:16-3.5
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: ballx_test
+      POSTGRES_USER: ballx
+      POSTGRES_PASSWORD: ballx_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ballx -d ballx_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  test:
+    image: ballx-gpid:dev
+    build: .
+    profiles: ["test"]
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://ballx:ballx_test@test-db:5432/ballx_test
+    command: ["pytest", "-q", "-p", "no:cacheprovider"]
+    depends_on:
+      test-db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
