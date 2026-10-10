@@ -5,7 +5,10 @@ from sqlalchemy import create_engine, pool
 
 from ballx.config import get_settings
 from ballx.db.base import Base
-from ballx.domain import models  # noqa: F401
+from ballx.domain import (
+    ingestion_models,  # noqa: F401
+    models,  # noqa: F401
+)
 
 config = context.config
 if config.config_file_name:

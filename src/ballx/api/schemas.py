@@ -18,6 +18,7 @@ class StrictSchema(BaseModel):
 
 class GroundFields(StrictSchema):
     name: Name
+    country_code: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
     aliases: list[Name] = Field(default_factory=list, max_length=100)
     latitude: Annotated[Decimal, Field(ge=-90, le=90, decimal_places=7)] | None = None
     longitude: Annotated[Decimal, Field(ge=-180, le=180, decimal_places=7)] | None = None

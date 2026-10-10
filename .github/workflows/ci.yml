@@ -1,4 +1,4 @@
-name: Milestone 1 checks
+name: Foundation and ingestion checks
 
 on:
   push:
