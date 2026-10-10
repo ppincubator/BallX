@@ -1,0 +1,30 @@
+{
+  "milestone": 2,
+  "as_of": "2026-10-10",
+  "status": "implemented_and_synthetic_tests_passed_real_validation_blocked",
+  "planned_real_matches": 5,
+  "actual_real_matches_imported": 0,
+  "actual_real_matches_source_validated": 0,
+  "actual_matches_independently_scorecard_verified": 0,
+  "actual_real_weather_records_imported": 0,
+  "real_sample_validation_passed": false,
+  "global_ingestion_started": false,
+  "tests": {
+    "local_python_postgis": {"passed": 113, "failed": 0, "warnings": 2},
+    "docker_postgis": {"passed": 113, "failed": 0, "warnings": 2},
+    "data_kind": "explicitly synthetic; transactions rolled back"
+  },
+  "real_preparation_attempt": {
+    "command": "python -m ballx.ingestion.cli prepare --directory work/milestone2-sample",
+    "exit_code": 1,
+    "result": "Ingestion failed before completion: 403 Forbidden",
+    "cause": "Managed environment HTTPS destination policy blocks provider downloads"
+  },
+  "required_provider_hosts": ["cricsheet.org", "opendatacommons.org", "power.larc.nasa.gov"],
+  "scientific_limits": {
+    "pitch_strip_assignment": "unknown; never derived from venue names",
+    "weather_kind": "modeled atmospheric grid estimates only",
+    "measured_pitch_soil_moisture": "not collected or inferred",
+    "source_validation": "does not constitute independent scorecard or station validation"
+  }
+}

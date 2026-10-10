@@ -1,7 +1,7 @@
 """PostgreSQL models. Raw bytes, evidence, and normalized facts remain separate."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -11,6 +11,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Computed,
+    Date,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -135,6 +136,7 @@ class Ground(IdentityMixin, Base):
         {"schema": SCHEMA},
     )
     name: Mapped[str] = mapped_column(String(255))
+    country_code: Mapped[str | None] = mapped_column(String(2))
     aliases: Mapped[list[str]] = mapped_column(
         JSONB, default=list, server_default=text("'[]'::jsonb")
     )
@@ -191,6 +193,15 @@ class Match(IdentityMixin, Base):
         CheckConstraint("pitch_id IS NULL OR ground_id IS NOT NULL", name="pitch_requires_ground"),
         CheckConstraint("end_time IS NULL OR end_time >= start_time", name="time_order"),
         CheckConstraint("length(trim(provider_match_id)) > 0", name="provider_match_id"),
+        CheckConstraint(
+            "(time_precision = 'timestamp' AND start_time IS NOT NULL) OR "
+            "(time_precision = 'date' AND start_time IS NULL AND end_time IS NULL "
+            "AND start_date IS NOT NULL)",
+            name="time_precision",
+        ),
+        CheckConstraint("end_date IS NULL OR end_date >= start_date", name="date_order"),
+        CheckConstraint("jsonb_typeof(played_dates) = 'array'", name="played_dates"),
+        CheckConstraint("jsonb_typeof(teams) = 'array'", name="teams"),
         {"schema": SCHEMA},
     )
     provider_match_id: Mapped[str] = mapped_column(String(255))
@@ -199,8 +210,21 @@ class Match(IdentityMixin, Base):
     pitch_id: Mapped[uuid.UUID | None] = mapped_column(index=True)
     format: Mapped[str] = mapped_column(String(64))
     gender_category: Mapped[str | None] = mapped_column(String(64))
-    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    start_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    start_date: Mapped[date | None] = mapped_column(Date)
+    end_date: Mapped[date | None] = mapped_column(Date)
+    time_precision: Mapped[str] = mapped_column(String(16), server_default="timestamp")
+    played_dates: Mapped[list[str]] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
+    )
+    teams: Mapped[list[str]] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
+    )
+    source_venue: Mapped[str | None] = mapped_column(Text)
+    source_revision: Mapped[int | None]
+    data_version: Mapped[str | None] = mapped_column(String(32))
+    source_artifact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("raw.artifact.id"))
     competition: Mapped[str | None] = mapped_column(String(255))
 
 

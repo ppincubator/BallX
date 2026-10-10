@@ -16,16 +16,21 @@ dependencies = [
   "geoalchemy2>=0.16,<1",
   "pydantic-settings>=2.5,<3",
   "tzdata>=2024.2",
+  "httpx>=0.27,<1",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<10", "httpx>=0.27,<1", "ruff>=0.9,<1"]
+dev = ["pytest>=8,<10", "ruff>=0.9,<1"]
+
+[project.scripts]
+ballx-ingest = "ballx.ingestion.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "-ra --strict-markers"
 markers = ["integration: requires a dedicated PostgreSQL/PostGIS test database"]
 

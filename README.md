@@ -10,7 +10,10 @@ The research specification is [BALLX_CODEX_HANDOFF.md](BALLX_CODEX_HANDOFF.md),
 These are preliminary research inputs, not a validated global dataset or approved
 source permissions. See [architecture and scope](docs/architecture.md),
 [research blockers](docs/research-blockers.md), and [actual validation results](docs/validation.md).
-Milestone 2 requires Milestone 1 review and has not been started.
+Milestone 1 was merged in PR #1. Milestone 2 adds a bounded Cricsheet JSON replay
+pipeline and NASA POWER atmospheric weather adapter. Its real-data validation is
+pending provider network access; synthetic tests are not real imported matches.
+See [Milestone 2 execution and status](docs/milestone2.md).
 
 ## Start with Docker Compose
 
@@ -160,8 +163,47 @@ tests/integration/  API, spatial DB, provenance, immutability, migration roundtr
 docs/          architecture, curation, blockers, validation evidence
 ```
 
-No source-specific fetcher, scraping job, pilot ingestion, deterioration index,
-ball-wear model, or predictive model is included.
+The ingestion package includes explicit sample preparation, strict provider adapters,
+reviewed venue mappings, hash-pinned replay, receipts, and coverage reporting.
+Global scraping and predictive models remain outside this milestone.
+
+## Milestone 2: prepare and replay the bounded sample
+
+Run these commands in the local Python environment after `alembic upgrade head`:
+
+```bash
+# Uses the inherited HTTPS proxy and TLS trust. Downloads one 2008 annual archive,
+# selects five IPL matches at one reviewed ground, and makes one weather request.
+python -m ballx.ingestion.cli prepare --directory work/milestone2-sample
+
+# Replays the frozen original source bytes, without network calls.
+python -m ballx.ingestion.cli run \
+  --manifest work/milestone2-sample/manifest.json \
+  --report work/milestone2-quality.json
+
+# Repeating run should import zero new matches and report five duplicates.
+python -m ballx.ingestion.cli run \
+  --manifest work/milestone2-sample/manifest.json \
+  --report work/milestone2-replay-quality.json
+```
+
+The installed `ballx-ingest` command has the same interface. Preparation requires
+HTTPS access to `cricsheet.org`, `opendatacommons.org`, and `power.larc.nasa.gov`.
+It stops if its recorded rights review is more than 90 days old; re-review current
+terms before renewing it. It refuses to overwrite a frozen manifest. Source
+archives can change: first preparation records the archive hash; reproduction
+means replaying the retained, hash-pinned member bytes and weather response.
+
+Replay permits at most 25 selected matches and 10 weather responses per manifest.
+CLI exit 0 means the requested coverage checks passed, exit 2 means raw records
+and rejection/conflict receipts were committed but coverage failed, and exit 1
+means local input preparation failed. Database/infrastructure errors also fail
+the command. Inspect the full JSON report, including issues and attribution.
+
+Cricsheet match dates remain dates; unavailable start/end times and pitch-strip
+assignments remain `NULL`. Weather is an hourly atmospheric grid model estimate
+linked by the reviewed ground's local calendar date. It is not measured soil
+moisture, a ground-station observation, or actual match-time exposure.
 
 ## Builds in a managed proxy environment
 
